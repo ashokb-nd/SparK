@@ -4,27 +4,6 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
-import subprocess
-import sys
-
-def install_package(package_name):
-    try:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", package_name])
-    except subprocess.CalledProcessError as e:
-        print(f"Failed to install {package_name}: {e}")
-        sys.exit(1)
-
-
-# Example: Install the 'requests' library
-install_package("timm==0.5.4")
-install_package("Pillow")
-install_package("typed-argument-parser")
-install_package("tensorboardx")
-
-import timm
-print(timm.__version__)
-
-
 import datetime
 import math
 import sys

@@ -28,6 +28,19 @@ from utils.lr_control import lr_wd_annealing, get_param_groups
 
 mlflow.enable_system_metrics_logging()
 
+# install timm
+import subprocess
+import sys
+
+def install_package(package_name):
+    subprocess.check_call([sys.executable, "-m", "pip", "install", package_name])
+
+# Example: Install the 'requests' library
+install_package("timm")
+
+# Now you can import and use the library
+import timm
+print(timm.__version__)
 
 class LocalDDP(torch.nn.Module):
     def __init__(self, module):

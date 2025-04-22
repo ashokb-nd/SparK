@@ -14,6 +14,7 @@ from typing import List
 import torch
 from torch.nn.parallel import DistributedDataParallel
 from torch.utils.data import DataLoader
+import mlflow
 
 import dist
 import encoder
@@ -24,6 +25,8 @@ from spark import SparK
 from utils import arg_util, misc, lamb
 from utils.imagenet import build_dataset_to_pretrain
 from utils.lr_control import lr_wd_annealing, get_param_groups
+
+mlflow.enable_system_metrics_logging()
 
 
 class LocalDDP(torch.nn.Module):
@@ -41,6 +44,11 @@ def main_pt():
     args.log_epoch()
     
     # build data
+    # 1. download datafrom s3
+    image_s3_path = "s3://netradyne-sharing/analytics/advaith/midgard/ds/fe_large_scale_reprocessing_200k_equally_sampled_alerts_july_1/"
+    temp_dir = "data_fe/"
+    mlflow.artifacts.download_artifacts(image_s3_path, dst_path=temp_dir)
+    args.data_path = temp_dir
     print(f'[build data for pre-training] ...\n')
     dataset_train = build_dataset_to_pretrain(args.data_path, args.input_size)
     data_loader_train = DataLoader(
@@ -100,11 +108,15 @@ def main_pt():
             
             stats = pre_train_one_ep(ep, args, tb_lg, itrt_train, iters_train, model, optimizer)
             last_loss = stats['last_loss']
+            mlflow.log_metric("loss", last_loss, step=ep) # Log the loss to MLflow
             min_loss = min(min_loss, last_loss)
             performance_desc = f'{min_loss:.4f} {last_loss:.4f}'
             misc.save_checkpoint_with_meta_info_and_opt_state(f'{args.model}_withdecoder_1kpretrained_spark_style.pth', args, ep, performance_desc, model_without_ddp.state_dict(with_config=True), optimizer.state_dict())
             misc.save_checkpoint_model_weights_only(f'{args.model}_1kpretrained_timm_style.pth', args, model_without_ddp.sparse_encoder.sp_cnn.state_dict())
             
+            # log the model for every 40 epochs
+            if ep % 40 == 0:
+                mlflow.pytorch.log_model(model_without_ddp, f"model_epoch_{ep}")
             ep_cost = round(time.time() - ep_start_time, 2) + 1    # +1s: approximate the following logging cost
             remain_secs = (args.ep-1 - ep) * ep_cost
             remain_time = datetime.timedelta(seconds=round(remain_secs))

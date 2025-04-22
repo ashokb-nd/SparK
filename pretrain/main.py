@@ -14,6 +14,7 @@ def install_package(package_name):
 
 # Example: Install the 'requests' library
 install_package("timm")
+install_package("tensorboard")
 
 # Now you can import and use the library
 import timm

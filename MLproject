@@ -1,7 +1,7 @@
 name: spark-training
 
 docker_env:
-  image:  spark:latest
+  image:  spark:latest_1
 
 entry_points:
   main:

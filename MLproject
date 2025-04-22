@@ -1,4 +1,4 @@
-name: spark_training
+name: sparkTraining
 
 docker_env:
   image:  362972578037.dkr.ecr.us-west-1.amazonaws.com/mlflow-docker-versions:mlflow_eks_image

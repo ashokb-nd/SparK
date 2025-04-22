@@ -13,10 +13,11 @@ def install_package(package_name):
     subprocess.check_call([sys.executable, "-m", "pip", "install", package_name])
 
 # Example: Install the 'requests' library
-install_package("timm")
-install_package("tensorboard")
+install_package("timm==0.5.4")
+install_package("Pillow")
+install_package("typed-argument-parser")
+install_package("tensorboardx")
 
-# Now you can import and use the library
 import timm
 print(timm.__version__)
 

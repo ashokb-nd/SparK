@@ -35,7 +35,7 @@ class ImageNetDataset(DatasetFolder):
             transform: Callable,
             is_valid_file: Optional[Callable[[str], bool]] = None,
     ):
-        imagenet_folder = os.path.join(imagenet_folder, 'train' if train else 'val')
+        # imagenet_folder = os.path.join(imagenet_folder, 'train' if train else 'val')
         super(ImageNetDataset, self).__init__(
             imagenet_folder,
             loader=pil_loader,
@@ -54,6 +54,9 @@ class ImageNetDataset(DatasetFolder):
 
 def build_dataset_to_pretrain(dataset_path, input_size) -> Dataset:
     """
+    Ashok edit: 
+        - it was taking 'train' subfolder of dataset_path as default. It was removed. 
+        
     You may need to modify this function to return your own dataset.
     Define a new class, a subclass of `Dataset`, to replace our ImageNetDataset.
     Use dataset_path to build your image file path list.
@@ -71,9 +74,9 @@ def build_dataset_to_pretrain(dataset_path, input_size) -> Dataset:
     ])
     
     dataset_path = os.path.abspath(dataset_path)
-    for postfix in ('train', 'val'):
-        if dataset_path.endswith(postfix):
-            dataset_path = dataset_path[:-len(postfix)]
+    # for postfix in ('train', 'val'):
+    #     if dataset_path.endswith(postfix):
+    #         dataset_path = dataset_path[:-len(postfix)]
     
     dataset_train = ImageNetDataset(imagenet_folder=dataset_path, transform=trans_train, train=True)
     print_transform(trans_train, '[pre-train]')

@@ -10,6 +10,8 @@ import sys
 import time
 from functools import partial
 from typing import List
+import os
+import zipfile
 
 import torch
 from torch.nn.parallel import DistributedDataParallel
@@ -37,18 +39,11 @@ class LocalDDP(torch.nn.Module):
         return self.module(*args, **kwargs)
 
 
-def main_pt():
+def main_pt(extracted_dir):
     args: arg_util.Args = arg_util.init_dist_and_get_args()
     print(f'initial args:\n{str(args)}')
     args.log_epoch()
-    
-    # build data
-    # 1. download datafrom s3
-    image_s3_path = "s3://netradyne-sharing/analytics/advaith/midgard/ds/fe_large_scale_reprocessing_200k_equally_sampled_alerts_july_1/"
-    temp_dir = "data_fe/"
-    mlflow.artifacts.download_artifacts(image_s3_path, dst_path=temp_dir)
-    args.data_path = temp_dir
-    print(f'[build data for pre-training] ...\n')
+    args.data_path = extracted_dir
     dataset_train = build_dataset_to_pretrain(args.data_path, args.input_size)
     data_loader_train = DataLoader(
         dataset=dataset_train, num_workers=args.dataloader_workers, pin_memory=True,
@@ -199,4 +194,6 @@ def pre_train_one_ep(ep, args: arg_util.Args, tb_lg: misc.TensorboardLogger, itr
 
 
 if __name__ == '__main__':
-    main_pt()
+    extracted_dir = 'tmp/spark_data_dummy'
+    print('Running pre-training...')
+    main_pt(extracted_dir)

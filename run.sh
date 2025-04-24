@@ -1,0 +1,3 @@
+python pretrain/download_data.py
+echo "running spark job..."
+torchrun --nproc_per_node=4 --nnodes=1 --node_rank=0  pretrain/main.py  --exp_name=spark_experiment --exp_dir=logdir/ --model=convnext_base --input_size=224 --bs=128 

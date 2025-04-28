@@ -1,4 +1,4 @@
-name: spark-training
+name: spark
 
 docker_env:
   image:  spark:latest_1

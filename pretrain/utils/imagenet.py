@@ -6,6 +6,7 @@
 
 import os
 from typing import Any, Callable, Optional, Tuple
+import random
 
 import PIL.Image as PImage
 from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
@@ -48,8 +49,15 @@ class ImageNetDataset(DatasetFolder):
         self.targets = None # this is self-supervised learning so we don't need labels
     
     def __getitem__(self, index: int) -> Any:
-        img_file_path = self.samples[index]
-        return self.transform(self.loader(img_file_path))
+        try: 
+            img_file_path = self.samples[index]
+            return_values =  self.transform(self.loader(img_file_path))
+            return return_values
+            # pick another image if the current one is broken
+        except Exception as e:
+            print(f'Error in loading image {img_file_path}: {e}')
+            random_index = random.randint(0, len(self.samples) - 1)
+            return self.__getitem__(random_index)
 
 
 def build_dataset_to_pretrain(dataset_path, input_size) -> Dataset:

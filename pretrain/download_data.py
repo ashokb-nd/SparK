@@ -23,5 +23,10 @@ else:
     mlflow.artifacts.download_artifacts(image_s3_path, dst_path=temp_dir)
 
 
+# remove any subdirectories without having any files in it. as it causes error.
+cmd = "rmdir tmp/spark_data_dummy/* "
+os.system(cmd)
+
 print("Data downloaded and extracted successfully.")
 # extracted_dir = 'data/spark_dummy_data'
+

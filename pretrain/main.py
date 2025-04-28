@@ -39,12 +39,11 @@ class LocalDDP(torch.nn.Module):
         return self.module(*args, **kwargs)
 
 
-def main_pt(extracted_dir):
+def main_pt():
     args: arg_util.Args = arg_util.init_dist_and_get_args()
     print(f'initial args:\n{str(args)}')
     args.log_epoch()
-    args.data_path = extracted_dir
-    dataset_train = build_dataset_to_pretrain(args.data_path, args.input_size)
+    dataset_train = build_dataset_to_pretrain(args.input_size)
     data_loader_train = DataLoader(
         dataset=dataset_train, num_workers=args.dataloader_workers, pin_memory=True,
         batch_sampler=DistInfiniteBatchSampler(
@@ -194,6 +193,4 @@ def pre_train_one_ep(ep, args: arg_util.Args, tb_lg: misc.TensorboardLogger, itr
 
 
 if __name__ == '__main__':
-    extracted_dir = 'tmp/spark_data_dummy'
-    print('Running pre-training...')
-    main_pt(extracted_dir)
+    main_pt()

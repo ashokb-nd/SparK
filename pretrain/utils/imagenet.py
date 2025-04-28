@@ -19,6 +19,9 @@ from torchvision.io import read_image
 
 from config import S3_CSV_PATH, LOCAL_DATA_ROOT, S3_DATASET_PATH_PREFIX
 
+# Disable MLflow artifacts progress bar
+os.environ['MLFLOW_ENABLE_ARTIFACTS_PROGRESS_BAR'] = 'false'
+
 try:
     from torchvision.transforms import InterpolationMode
     interpolation = InterpolationMode.BICUBIC
@@ -83,14 +86,16 @@ class ImageNetDataset(Dataset):
         try:
             return self.loader(img_local_path)
         except Exception as e:
-            print(f"Error loading local image {img_local_path}: {e}")
+            # print(f"Error loading local image {img_local_path}: {e}")
             return None
 
     def _download_and_load_image(self, img_path: str, img_local_path: str) -> Optional[Any]:
         """Try to download an image from S3 and load it."""
         img_s3_path = os.path.join(self.s3_path_prefix, img_path)
         try:
-            mlflow.artifacts.download_artifacts(img_s3_path, dst_path=img_local_path)
+            # destination path should be directory not file
+            dst_path = os.path.dirname(img_local_path)
+            mlflow.artifacts.download_artifacts(img_s3_path, dst_path=dst_path)
             return self.loader(img_local_path)
         except Exception as e:
             print(f"Error downloading image {img_s3_path}: {e}")

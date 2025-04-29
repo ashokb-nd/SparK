@@ -93,6 +93,8 @@ def main_pt():
         print(f'[PT start] from ep{ep_start}')
         
         pt_start_time = time.time()
+        
+        # Training loop
         for ep in range(ep_start, args.ep):
             ep_start_time = time.time()
             tb_lg.set_step(ep * iters_train)
@@ -107,9 +109,9 @@ def main_pt():
             misc.save_checkpoint_with_meta_info_and_opt_state(f'{args.model}_withdecoder_1kpretrained_spark_style.pth', args, ep, performance_desc, model_without_ddp.state_dict(with_config=True), optimizer.state_dict())
             misc.save_checkpoint_model_weights_only(f'{args.model}_1kpretrained_timm_style.pth', args, model_without_ddp.sparse_encoder.sp_cnn.state_dict())
             
-            # log the model for every 40 epochs
-            if ep % 40 == 0:
-                mlflow.pytorch.log_model(model_without_ddp, f"model_epoch_{ep}")
+            # log the model
+            # if ep % 2 == 0:
+            mlflow.pytorch.log_model(model_without_ddp, f"model_epoch_{ep}")
             ep_cost = round(time.time() - ep_start_time, 2) + 1    # +1s: approximate the following logging cost
             remain_secs = (args.ep-1 - ep) * ep_cost
             remain_time = datetime.timedelta(seconds=round(remain_secs))
@@ -182,6 +184,10 @@ def pre_train_one_ep(ep, args: arg_util.Args, tb_lg: misc.TensorboardLogger, itr
         tb_lg.update(sche_lr=min_lr, head='train_hp/lr_min')
         tb_lg.update(sche_wd=max_wd, head='train_hp/wd_max')
         tb_lg.update(sche_wd=min_wd, head='train_hp/wd_min')
+
+        # store tensorboard log dir as artifact
+        if dist.is_master():
+            mlflow.log_artifact(args.tb_lg_dir, artifact_path="tensorboard_logs")
         
         if grad_norm is not None:
             me.update(orig_norm=grad_norm)

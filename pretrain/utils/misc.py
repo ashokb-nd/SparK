@@ -13,12 +13,14 @@ import time
 from collections import defaultdict, deque
 from typing import Iterator
 
+import mlflow
 import numpy as np
 import pytz
 import torch
 from torch.utils.tensorboard import SummaryWriter
 
 import dist
+
 
 os_system = functools.partial(subprocess.call, shell=True)
 os_system_get_stdout = lambda cmd: subprocess.run(cmd, shell=True, stdout=subprocess.PIPE).stdout.decode('utf-8')
@@ -119,6 +121,7 @@ class TensorboardLogger(object):
                     v = v.item()
                 assert isinstance(v, (float, int))
                 self.writer.add_scalar(head + "/" + k, v, step)
+                mlflow.log_metric(f'{head}/{k}', v, step) # log to mlflow also
     
     def log_distribution(self, tag, values, step=None):
         step, loggable = self.get_loggable(step)

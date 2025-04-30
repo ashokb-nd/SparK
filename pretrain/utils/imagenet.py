@@ -11,13 +11,13 @@ import pandas as pd
 import mlflow
 
 import PIL.Image as PImage
-from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 from torchvision.datasets.folder import DatasetFolder, IMG_EXTENSIONS
 from torchvision.transforms import transforms
 from torch.utils.data import Dataset
 from torchvision.io import read_image
 
-from config import S3_CSV_PATH, LOCAL_DATA_ROOT, S3_DATASET_PATH_PREFIX
+from config import S3_CSV_PATH, LOCAL_DATA_ROOT, S3_DATASET_PATH_PREFIX, IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
+# from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD # use the statistics of the fleet edge dataset
 
 # Disable MLflow artifacts progress bar
 os.environ['MLFLOW_ENABLE_ARTIFACTS_PROGRESS_BAR'] = 'false'

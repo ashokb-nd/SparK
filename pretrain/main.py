@@ -188,7 +188,7 @@ def pre_train_one_ep(ep, args: arg_util.Args, tb_lg: misc.TensorboardLogger, itr
 
         # store tensorboard log dir as artifact
         if dist.is_master():
-            mlflow.log_artifact(args.tb_lg_dir, artifact_path="tensorboard_logs")
+            mlflow.log_artifact(os.path.join(args.tb_lg_dir,'..'), artifact_path="tensorboard_logs")
         
         if grad_norm is not None:
             me.update(orig_norm=grad_norm)

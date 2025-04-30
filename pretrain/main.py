@@ -184,6 +184,7 @@ def pre_train_one_ep(ep, args: arg_util.Args, tb_lg: misc.TensorboardLogger, itr
         tb_lg.update(sche_lr=min_lr, head='train_hp/lr_min')
         tb_lg.update(sche_wd=max_wd, head='train_hp/wd_max')
         tb_lg.update(sche_wd=min_wd, head='train_hp/wd_min')
+        tb_lg.update(epoch=ep, head='train_hp/epoch')
 
         # store tensorboard log dir as artifact
         if dist.is_master():

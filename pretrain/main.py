@@ -17,6 +17,7 @@ import torch
 from torch.nn.parallel import DistributedDataParallel
 from torch.utils.data import DataLoader
 import mlflow
+from tqdm import tqdm
 
 import dist
 import encoder
@@ -107,8 +108,8 @@ def main_pt():
             mlflow.log_metric("loss", last_loss, step=ep) # Log the loss to MLflow
             min_loss = min(min_loss, last_loss)
             performance_desc = f'{min_loss:.4f} {last_loss:.4f}'
-            misc.save_checkpoint_with_meta_info_and_opt_state(f'{args.model}_withdecoder_1kpretrained_spark_style.pth', args, ep, performance_desc, model_without_ddp.state_dict(with_config=True), optimizer.state_dict())
-            misc.save_checkpoint_model_weights_only(f'{args.model}_1kpretrained_timm_style.pth', args, model_without_ddp.sparse_encoder.sp_cnn.state_dict())
+            misc.save_checkpoint_with_meta_info_and_opt_state(f'checkpoints/{ep}/{args.model}_withdecoder_1kpretrained_spark_style.pth', args, ep, performance_desc, model_without_ddp.state_dict(with_config=True), optimizer.state_dict())
+            misc.save_checkpoint_model_weights_only(f'checkpoints/{ep}/{args.model}_1kpretrained_timm_style.pth', args, model_without_ddp.sparse_encoder.sp_cnn.state_dict())
             
             # log the model
             # if ep % 2 == 0:
@@ -155,7 +156,8 @@ def pre_train_one_ep(ep, args: arg_util.Args, tb_lg: misc.TensorboardLogger, itr
     if early_clipping:
         params_req_grad = [p for p in model.parameters() if p.requires_grad]
     
-    for it, inp in enumerate(me.log_every(iters_train, itrt_train, 3, header)):
+    # Wrap me.log_every with tqdm
+    for it, inp in tqdm(enumerate(me.log_every(iters_train, itrt_train, 3, header)), total=iters_train, desc=header):
         # adjust lr and wd
         min_lr, max_lr, min_wd, max_wd = lr_wd_annealing(optimizer, args.lr, args.wd, args.wde, it + ep * iters_train, args.wp_ep * iters_train, args.ep * iters_train)
         
@@ -169,6 +171,10 @@ def pre_train_one_ep(ep, args: arg_util.Args, tb_lg: misc.TensorboardLogger, itr
         if not math.isfinite(loss):
             print(f'[rk{dist.get_rank():02d}] Loss is {loss}, stopping training!', force=True, flush=True)
             sys.exit(-1)
+        
+        # Print loss every 1000 iterations
+        if it % 50 == 0:
+            tqdm.write(f"Iteration {it}, Loss: {loss}")
         
         # optimize
         grad_norm = None
@@ -187,10 +193,26 @@ def pre_train_one_ep(ep, args: arg_util.Args, tb_lg: misc.TensorboardLogger, itr
         tb_lg.update(sche_wd=min_wd, head='train_hp/wd_min')
         tb_lg.update(epoch=ep, head='train_hp/epoch')
 
-        # store tensorboard log dir as artifact
-        if dist.is_master():
-            mlflow.log_artifact(os.path.join(args.tb_lg_dir,'..'), artifact_path="tensorboard_logs")
-        
+
+        # every 5000 iterations, save the checkpoints
+        if it % 5000 == 0:
+            model_without_ddp = model.module if hasattr(model, 'module') else model
+            performance_desc = f'{me.meters["last_loss"].global_avg:.4f} {me.meters["last_loss"].avg:.4f}'
+            misc.save_checkpoint_with_meta_info_and_opt_state(f'{args.model}_withdecoder_1kpretrained_spark_style_latest.pth', args, ep, performance_desc, model_without_ddp.state_dict(with_config=True), optimizer.state_dict())
+            misc.save_checkpoint_model_weights_only(f'{args.model}_1kpretrained_timm_style_latest.pth', args, model_without_ddp.sparse_encoder.sp_cnn.state_dict())
+            
+            # update a log file, to record the last checkpoint
+            log_file = os.path.join(args.exp_dir, "latest_checkpoint_details.txt")
+            with open(log_file, "a") as f:
+                msg = f" epoch: {ep}, iters: {it}, time : {datetime.datetime.now()},loss: {me.meters['last_loss'].global_avg:.4f}, min_loss: {me.meters['last_loss'].avg:.4f}, performance_desc: {performance_desc}"
+                f.write(msg + "\n")
+            
+            # log to terminal about the last checkpoint ; in short
+            print(f"store checkpoint: epoch: {ep}, iters: {it}, time : {datetime.datetime.now()}")
+            # store tensorboard log dir as artifact
+            if dist.is_master():
+                mlflow.log_artifact(os.path.join(args.tb_lg_dir,'..'), artifact_path="experiment_logs")
+
         if grad_norm is not None:
             me.update(orig_norm=grad_norm)
             tb_lg.update(orig_norm=grad_norm, head='train_hp')

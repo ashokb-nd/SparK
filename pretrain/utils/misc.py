@@ -145,6 +145,8 @@ class TensorboardLogger(object):
 
 def save_checkpoint_with_meta_info_and_opt_state(save_to, args, epoch, performance_desc, model_without_ddp_state, optimizer_state):
     checkpoint_path = os.path.join(args.exp_dir, save_to)
+    os.makedirs(os.path.dirname(checkpoint_path), exist_ok=True)
+
     if dist.is_local_master():
         to_save = {
             'args': str(args),
@@ -161,6 +163,7 @@ def save_checkpoint_with_meta_info_and_opt_state(save_to, args, epoch, performan
 
 def save_checkpoint_model_weights_only(save_to, args, sp_cnn_state):
     checkpoint_path = os.path.join(args.exp_dir, save_to)
+    os.makedirs(os.path.dirname(checkpoint_path), exist_ok=True)
     if dist.is_local_master():
         torch.save(sp_cnn_state, checkpoint_path)
 

@@ -172,6 +172,10 @@ def initialize_weight(init_weight: str, model_without_ddp):
     # use some checkpoint as model weight initialization; ONLY load model weights
     if len(init_weight):
         checkpoint = torch.load(init_weight, 'cpu')
+        # if checkpoint is a model, get it's state_dict 
+        if not isinstance(checkpoint, dict):
+            checkpoint = checkpoint.state_dict()
+            
         missing, unexpected = model_without_ddp.load_state_dict(checkpoint.get('module', checkpoint), strict=False)
         print(f'[initialize_weight] missing_keys={missing}')
         print(f'[initialize_weight] unexpected_keys={unexpected}')

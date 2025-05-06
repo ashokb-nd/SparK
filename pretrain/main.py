@@ -40,6 +40,7 @@ class LocalDDP(torch.nn.Module):
 
 
 def main_pt():
+    # 1. Args, dataset
     args: arg_util.Args = arg_util.init_dist_and_get_args()
     print(f'initial args:\n{str(args)}')
     args.log_epoch()
@@ -54,7 +55,7 @@ def main_pt():
     itrt_train, iters_train = iter(data_loader_train), len(data_loader_train)
     print(f'[dataloader] gbs={args.glb_batch_size}, lbs={args.batch_size_per_gpu}, iters_train={iters_train}')
     
-    # build encoder and decoder
+    # 2. build encoder and decoder
     enc: encoder.SparseEncoder = build_sparse_encoder(args.model, input_size=args.input_size, sbn=args.sbn, drop_path_rate=args.dp, verbose=False)
     dec = LightDecoder(enc.downsample_raito, sbn=args.sbn)
     model_without_ddp = SparK(

@@ -74,6 +74,7 @@ class Args(Tap):
         if not dist.is_local_master():
             return
         
+        # only first time
         if self.first_logging:
             self.first_logging = False
             with open(self.log_txt_name, 'w') as fp:
@@ -83,6 +84,7 @@ class Args(Tap):
                 }, fp)
                 fp.write('\n\n')
         
+        # once per epoch
         with open(self.log_txt_name, 'a') as fp:
             json.dump({
                 'cur_ep': self.cur_ep,

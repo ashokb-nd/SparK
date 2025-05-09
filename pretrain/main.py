@@ -105,7 +105,7 @@ def main_pt():
             
             stats = pre_train_one_ep(ep, args, tb_lg, itrt_train, iters_train, model, optimizer)
             last_loss = stats['last_loss']
-            mlflow.log_metric("loss", last_loss, step=ep) # Log the loss to MLflow
+            # mlflow.log_metric("loss", last_loss, step=ep) # Log the loss to MLflow
             min_loss = min(min_loss, last_loss)
             performance_desc = f'{min_loss:.4f} {last_loss:.4f}'
             misc.save_checkpoint_with_meta_info_and_opt_state(f'checkpoints/{ep}/{args.model}_withdecoder_1kpretrained_spark_style.pth', args, ep, performance_desc, model_without_ddp.state_dict(with_config=True), optimizer.state_dict())
@@ -174,7 +174,9 @@ def pre_train_one_ep(ep, args: arg_util.Args, tb_lg: misc.TensorboardLogger, itr
         
         # Print loss every 1000 iterations
         if it % 50 == 0:
-            tqdm.write(f"Iteration {it}, Loss: {loss}")
+            if dist.is_master():
+                # Print the loss to the console
+                tqdm.write(f"Iteration {it}, Loss: {loss}")
         
         # optimize
         grad_norm = None
@@ -207,11 +209,13 @@ def pre_train_one_ep(ep, args: arg_util.Args, tb_lg: misc.TensorboardLogger, itr
                 msg = f" epoch: {ep}, iters: {it}, time : {datetime.datetime.now()},loss: {me.meters['last_loss'].global_avg:.4f}, min_loss: {me.meters['last_loss'].avg:.4f}, performance_desc: {performance_desc}"
                 f.write(msg + "\n")
             
-            # log to terminal about the last checkpoint ; in short
-            print(f"store checkpoint: epoch: {ep}, iters: {it}, time : {datetime.datetime.now()}")
-            # store tensorboard log dir as artifact
-            if dist.is_master():
-                mlflow.log_artifact(os.path.join(args.tb_lg_dir,'..'), artifact_path="experiment_logs")
+            # # log to terminal about the last checkpoint ; in short
+            # print(f"store checkpoint: epoch: {ep}, iters: {it}, time : {datetime.datetime.now()}")
+            # # store tensorboard log dir as artifact
+            # if dist.is_master():
+            #     mlflow.log_artifact(os.path.join(args.tb_lg_dir,'..'), artifact_path="experiment_logs")
+
+            ### write a seperate script for checkpointing the model weights.
 
         if grad_norm is not None:
             me.update(orig_norm=grad_norm)

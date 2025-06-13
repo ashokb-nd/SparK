@@ -3,6 +3,7 @@ import json
 import os
 import time
 import mlflow
+import argparse
 
 class TeamsMessenger:
     def __init__(self, webhook_url):
@@ -38,26 +39,36 @@ def read_tail(filepath,rows=10):
     return output
 
 if __name__ == "__main__":
-    webhook_url = "https://netorg726775.webhook.office.com/webhookb2/8cbcc9af-7602-4c4f-b5b1-d46ba143455e@b84f219a-0fcd-4dfa-8476-edcc96f3324c/IncomingWebhook/f351da18983f4fe3ad0959620e93569e/4353d6e9-f97d-47b6-8012-461de8807c18/V2rMGo_swhGuYoHT-XIHuEJfC6CRWd-wZiRcs6Ty0OUlk1"
-    messenger = TeamsMessenger(webhook_url)
 
-    filepath =  "/ashok/SparK/logdir/stdout_backup.txt"
-    experiment_dir = '/ashok/SparK/logdir/', # to log the artifacts
+    ASHOK_WEBHOOK_URL =  "https://netorg726775.webhook.office.com/webhookb2/8cbcc9af-7602-4c4f-b5b1-d46ba143455e@b84f219a-0fcd-4dfa-8476-edcc96f3324c/IncomingWebhook/f351da18983f4fe3ad0959620e93569e/4353d6e9-f97d-47b6-8012-461de8807c18/V2rMGo_swhGuYoHT-XIHuEJfC6CRWd-wZiRcs6Ty0OUlk1" 
+
+    #tag from command line
+    parser = argparse.ArgumentParser(description='Send messages to Microsoft Teams.')
+
+    parser.add_argument('--webhook_url', type=str, default=ASHOK_WEBHOOK_URL, help='Microsoft Teams webhook URL')
+    parser.add_argument("--tag", type=str, default="spark", help="Tag for the experiment")
+    parser.add_argument("--filepath", type=str, default="/ashok/SparK/logdir/stdout_backup.txt", help="Path to Read the loss values")
+    parser.add_argument("--experiment_dir", type=str, default="/ashok/SparK/logdir/", help="Directory to log the artifacts")
+
+    args = parser.parse_args()
+
+    messenger = TeamsMessenger(args.webhook_url)
 
     i = 0
     while True:
 
         #every hour send last 4 lines of the log file
-        message = read_tail(filepath, 4)
+        message = read_tail(args.filepath, 4)
         datetime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
         header = "spark (Imagenet pretrained) @ " + datetime + "\n"
         messenger.send_message(header + message)
         print(header + message)
         time.sleep(3600)
 
-        if (i+1)%4 == 0:
+        if (i+1)%4 == 0: # every 4 hours 
             print("Logging artifacts to MLflow")
-            mlflow.artifacts.logartifact(experiment_dir, artifact_path="experiment_logs")
+            mlflow.artifacts.logartifact(args.experiment_dir, 
+                                         artifact_path="experiment_logs")
 
 
     messenger.close_session()
